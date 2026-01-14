@@ -57,6 +57,7 @@ Automated tests:
 - `npm run test:heuristics` for heuristic scoring
 - `npm run test:popup` for popup logic
 - `npm run test:filtering` for filtering decisions
+- `npm run benchmark` to run the heuristics benchmark set (defaults to threshold 72)
 
 Manual testing steps are documented in `TESTING.md`.
 

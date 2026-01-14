@@ -1,0 +1,14 @@
+{
+  "threshold": 72,
+  "accuracy": 93.8,
+  "precision": 99.5,
+  "recall": 88,
+  "conservativeThreshold": 72,
+  "conservativePrecision": 99.5,
+  "conservativeRecall": 88,
+  "precisionTarget": 99,
+  "samples": 500,
+  "sourceFile": "heuristics-benchmark-real.jsonl",
+  "note": "Suggested from benchmark sweep (max F1).",
+  "updatedAt": "2026-01-14"
+}

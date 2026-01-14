@@ -7,7 +7,7 @@ const DEFAULT_SETTINGS = {
   filterEnabled: true,
   collapseEnabled: false,
   enabled: true,
-  threshold: 75,
+  threshold: 72,
   analyzeTimeline: true,
   analyzeReplies: true,
   analyzeSearch: false,
@@ -21,6 +21,11 @@ const filteringLogic =
   typeof aiDetectorFiltering !== "undefined" ? aiDetectorFiltering : null;
 const processedScores = new Map();
 const pendingTweetIds = new Set();
+const REVEALED_STORAGE_KEY = "aiDetectorRevealedIds";
+const MAX_REVEALED_IDS = 300;
+const revealedTweetIds = new Set();
+let runtimeAvailable = true;
+let mutationObserver = null;
 
 const analyzeQueue = [];
 let queueProcessing = false;
@@ -35,6 +40,130 @@ const intersectionObserver = new IntersectionObserver(
   },
   { threshold: 0.3 }
 );
+
+function getRevealedStorageArea() {
+  if (
+    typeof chrome !== "undefined" &&
+    chrome.storage &&
+    chrome.storage.session &&
+    typeof chrome.storage.session.get === "function"
+  ) {
+    return chrome.storage.session;
+  }
+  if (
+    typeof chrome !== "undefined" &&
+    chrome.storage &&
+    chrome.storage.local &&
+    typeof chrome.storage.local.get === "function"
+  ) {
+    return chrome.storage.local;
+  }
+  return null;
+}
+
+function syncRevealedTweetIds(list) {
+  revealedTweetIds.clear();
+  if (!Array.isArray(list)) {
+    return;
+  }
+  const trimmed =
+    list.length > MAX_REVEALED_IDS ? list.slice(-MAX_REVEALED_IDS) : list;
+  trimmed.forEach((id) => {
+    if (typeof id === "string" && id.length > 0) {
+      revealedTweetIds.add(id);
+    }
+  });
+}
+
+function loadRevealedTweetIds() {
+  const storageArea = getRevealedStorageArea();
+  if (storageArea) {
+    return new Promise((resolve) => {
+      storageArea.get(REVEALED_STORAGE_KEY, (result) => {
+        const list = result && result[REVEALED_STORAGE_KEY];
+        syncRevealedTweetIds(list);
+        resolve();
+      });
+    });
+  }
+
+  try {
+    if (!window.sessionStorage) {
+      return Promise.resolve();
+    }
+    const raw = window.sessionStorage.getItem(REVEALED_STORAGE_KEY);
+    if (!raw) {
+      return Promise.resolve();
+    }
+    const parsed = JSON.parse(raw);
+    syncRevealedTweetIds(parsed);
+  } catch (err) {
+    return Promise.resolve();
+  }
+  return Promise.resolve();
+}
+
+function persistRevealedTweetIds() {
+  const list = Array.from(revealedTweetIds);
+  const trimmed = list.length > MAX_REVEALED_IDS ? list.slice(-MAX_REVEALED_IDS) : list;
+  if (trimmed.length !== list.length) {
+    syncRevealedTweetIds(trimmed);
+  }
+  const storageArea = getRevealedStorageArea();
+  if (storageArea) {
+    const payload = {};
+    payload[REVEALED_STORAGE_KEY] = trimmed;
+    storageArea.set(payload, () => {});
+    return;
+  }
+
+  try {
+    if (!window.sessionStorage) {
+      return;
+    }
+    window.sessionStorage.setItem(
+      REVEALED_STORAGE_KEY,
+      JSON.stringify(trimmed)
+    );
+  } catch (err) {
+    return;
+  }
+}
+
+function clearRevealedTweetIds() {
+  const storageArea = getRevealedStorageArea();
+  if (storageArea) {
+    storageArea.remove(REVEALED_STORAGE_KEY, () => {});
+    return;
+  }
+
+  try {
+    if (!window.sessionStorage) {
+      return;
+    }
+    window.sessionStorage.removeItem(REVEALED_STORAGE_KEY);
+  } catch (err) {
+    return;
+  }
+}
+
+function markTweetRevealed(tweetId) {
+  if (!tweetId || revealedTweetIds.has(tweetId)) {
+    return;
+  }
+  if (revealedTweetIds.size >= MAX_REVEALED_IDS) {
+    const oldest = revealedTweetIds.values().next().value;
+    if (oldest) {
+      revealedTweetIds.delete(oldest);
+    }
+  }
+  revealedTweetIds.add(tweetId);
+  persistRevealedTweetIds();
+}
+
+function isTweetRevealed(tweetId) {
+  return Boolean(tweetId && revealedTweetIds.has(tweetId));
+}
 
 function sanitizeText(text) {
   if (!text) {
@@ -189,6 +318,19 @@ function getTweetId(element, text) {
   return "";
 }
 
+function getOrAssignTweetId(element) {
+  if (element && element.dataset && element.dataset.aiDetectorId) {
+    return element.dataset.aiDetectorId;
+  }
+
+  const text = getTweetText(element);
+  const tweetId = getTweetId(element, text);
+  if (tweetId && element && element.dataset) {
+    element.dataset.aiDetectorId = tweetId;
+  }
+  return tweetId;
+}
+
 function getTweetText(element) {
   const textNodes = element.querySelectorAll(
     "div[data-testid='tweetText'], div[lang]"
@@ -237,15 +379,40 @@ function shouldAnalyzeContext(element) {
 }
 
 function sendMessage(message) {
+  if (!runtimeAvailable || !chrome || !chrome.runtime || !chrome.runtime.id) {
+    return Promise.resolve({ success: false, error: "RUNTIME_UNAVAILABLE" });
+  }
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      if (chrome.runtime.lastError) {
-        resolve({ success: false, error: "RUNTIME_ERROR" });
-        return;
-      }
-      resolve(response || { success: false, error: "NO_RESPONSE" });
-    });
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        const lastError = chrome.runtime.lastError;
+        if (lastError) {
+          if (String(lastError.message || "").includes("Extension context invalidated")) {
+            handleRuntimeUnavailable();
+          }
+          resolve({ success: false, error: "RUNTIME_ERROR" });
+          return;
+        }
+        resolve(response || { success: false, error: "NO_RESPONSE" });
+      });
+    } catch (err) {
+      handleRuntimeUnavailable();
+      resolve({ success: false, error: "RUNTIME_UNAVAILABLE" });
+    }
   });
+}
+
+function handleRuntimeUnavailable() {
+  if (!runtimeAvailable) {
+    return;
+  }
+  runtimeAvailable = false;
+  analyzeQueue.length = 0;
+  pendingTweetIds.clear();
+  intersectionObserver.disconnect();
+  if (mutationObserver) {
+    mutationObserver.disconnect();
+  }
 }
 
 function getBadge(element) {
@@ -362,7 +529,7 @@ function collapseTweet(element, score) {
   button.type = "button";
   button.textContent = "Expand";
   button.addEventListener("click", () => {
-    revealTweet(element);
+    revealTweet(element, { markRevealed: true });
   });
 
   collapse.appendChild(info);
@@ -466,7 +633,7 @@ function hideTweet(element, score) {
   button.type = "button";
   button.textContent = "Reveal tweet";
   button.addEventListener("click", () => {
-    revealTweet(element);
+    revealTweet(element, { markRevealed: true });
   });
 
   placeholder.appendChild(header);
@@ -482,12 +649,19 @@ function hideTweet(element, score) {
   sendMessage({ action: "hiddenDelta", delta: 1 });
 }
 
-function revealTweet(element) {
+function revealTweet(element, options) {
   const cleared = clearHiddenState(element);
   if (!cleared) {
     return;
   }
-  element.dataset.aiDetectorRevealed = "true";
+  const markRevealed = Boolean(options && options.markRevealed);
+  if (markRevealed) {
+    element.dataset.aiDetectorRevealed = "true";
+    const tweetId = getOrAssignTweetId(element);
+    if (tweetId) {
+      markTweetRevealed(tweetId);
+    }
+  }
 }
 
 function getFilterAction(settingsSnapshot, score) {
@@ -522,6 +696,18 @@ function applyFiltering(element, score) {
     return;
   }
 
+  const tweetId = element.dataset.aiDetectorId || "";
+  if (isTweetRevealed(tweetId)) {
+    element.dataset.aiDetectorRevealed = "true";
+    if (
+      element.dataset.aiDetectorHidden === "true" ||
+      element.dataset.aiDetectorCollapsed === "true"
+    ) {
+      revealTweet(element, { markRevealed: false });
+    }
+    return;
+  }
+
   const action = getFilterAction(settings, score);
 
   if (action === "collapse") {
@@ -544,12 +730,16 @@ function applyFiltering(element, score) {
     element.dataset.aiDetectorHidden === "true" ||
     element.dataset.aiDetectorCollapsed === "true"
   ) {
-    revealTweet(element);
+    revealTweet(element, { markRevealed: false });
   }
 }
 
 async function analyzeTweet(element) {
   if (!element || !element.isConnected) {
+    return;
+  }
+
+  if (!runtimeAvailable) {
     return;
   }
 
@@ -630,7 +820,7 @@ async function analyzeTweet(element) {
   }
 }
 function enqueueTweet(element) {
-  if (!element || element.dataset.aiDetectorQueued === "true") {
+  if (!runtimeAvailable || !element || element.dataset.aiDetectorQueued === "true") {
     return;
   }
   element.dataset.aiDetectorQueued = "true";
@@ -661,7 +851,7 @@ function scanForTweets(root = document) {
 function observeTweets() {
   scanForTweets();
 
-  const observer = new MutationObserver((mutations) => {
+  mutationObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         if (!(node instanceof HTMLElement)) {
@@ -682,7 +872,7 @@ function observeTweets() {
     });
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  mutationObserver.observe(document.body, { childList: true, subtree: true });
 }
 
 function updateSettings() {
@@ -722,16 +912,24 @@ function revealAllHiddenTweets() {
       tweet.dataset.aiDetectorHidden === "true" ||
       tweet.dataset.aiDetectorCollapsed === "true"
     ) {
-      revealTweet(tweet);
+      revealTweet(tweet, { markRevealed: false });
     }
   });
 }
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName !== "sync") {
+  if (areaName === "sync") {
+    updateSettings();
     return;
   }
-  updateSettings();
+
+  if (
+    (areaName === "session" || areaName === "local") &&
+    changes &&
+    Object.prototype.hasOwnProperty.call(changes, REVEALED_STORAGE_KEY)
+  ) {
+    syncRevealedTweetIds(changes[REVEALED_STORAGE_KEY].newValue);
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -746,13 +944,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message && message.action === "clearLocalState") {
     processedScores.clear();
     pendingTweetIds.clear();
+    revealedTweetIds.clear();
+    clearRevealedTweetIds();
     sendResponse({ success: true });
   }
 });
 
-updateSettings();
-applyIdsToTweets();
-observeTweets();
+loadRevealedTweetIds()
+  .catch(() => {})
+  .then(() => {
+    updateSettings();
+    applyIdsToTweets();
+    observeTweets();
+  });
 
 
 

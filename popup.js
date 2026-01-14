@@ -7,7 +7,7 @@
   filterEnabled: true,
   collapseEnabled: false,
   enabled: true,
-  threshold: 75,
+  threshold: 72,
   analyzeTimeline: true,
   analyzeReplies: true,
   analyzeSearch: false,
@@ -21,7 +21,7 @@ const DEFAULT_SYNC_SETTINGS = {
   filterEnabled: true,
   collapseEnabled: false,
   enabled: true,
-  threshold: 75,
+  threshold: 72,
   analyzeTimeline: true,
   analyzeReplies: true,
   analyzeSearch: false,
@@ -96,10 +96,23 @@ const elements = {
   resetStats: document.getElementById("resetStats"),
   infoToggle: document.getElementById("infoToggle"),
   infoPanel: document.getElementById("infoPanel"),
-  infoClose: document.getElementById("infoClose")
+  infoClose: document.getElementById("infoClose"),
+  heuristicSuggestion: document.getElementById("heuristicSuggestion")
 };
 
 let currentSettings = { ...DEFAULT_SETTINGS };
+let heuristicSuggestion = {
+  threshold: 72,
+  accuracy: 93.8,
+  precision: 99.5,
+  recall: 88.0,
+  conservativeThreshold: 72,
+  conservativePrecision: 99.5,
+  conservativeRecall: 88.0,
+  precisionTarget: 99,
+  samples: 500,
+  note: "Suggested from benchmark sweep (max F1)."
+};
 
 function updateThresholdDisplay(value) {
   elements.thresholdValue.textContent = value;
@@ -187,6 +200,51 @@ function updatePrivacyUI() {
   } else {
     elements.privacyBanner.style.display = "block";
   }
+
+  if (elements.heuristicSuggestion) {
+    elements.heuristicSuggestion.hidden = !localOnly;
+  }
+}
+
+function formatPercentage(value) {
+  if (!Number.isFinite(value)) {
+    return "n/a";
+  }
+  return `${value.toFixed(1)}%`;
+}
+
+function updateHeuristicSuggestionText() {
+  if (!elements.heuristicSuggestion) {
+    return;
+  }
+  const accuracy = formatPercentage(heuristicSuggestion.accuracy);
+  const precision = formatPercentage(heuristicSuggestion.precision);
+  const recall = formatPercentage(heuristicSuggestion.recall);
+  const threshold = Number.isFinite(heuristicSuggestion.threshold)
+    ? heuristicSuggestion.threshold
+    : "n/a";
+  elements.heuristicSuggestion.textContent =
+    `Heuristic mode suggestion: ${threshold}% ` +
+    `(Accuracy ${accuracy}, Precision ${precision}, Recall ${recall}).`;
+}
+
+function loadHeuristicSuggestion() {
+  if (!chrome || !chrome.runtime || !chrome.runtime.getURL) {
+    updateHeuristicSuggestionText();
+    return;
+  }
+  const url = chrome.runtime.getURL("heuristics-suggestion.json");
+  fetch(url)
+    .then((response) => (response.ok ? response.json() : null))
+    .then((data) => {
+      if (data && typeof data === "object") {
+        heuristicSuggestion = { ...heuristicSuggestion, ...data };
+      }
+      updateHeuristicSuggestionText();
+    })
+    .catch(() => {
+      updateHeuristicSuggestionText();
+    });
 }
 
 function setInfoPanelVisible(visible) {
@@ -228,6 +286,7 @@ function loadSettings() {
       updateProviderUI(elements.provider.value);
       updateApiKeyField(elements.provider.value);
       updatePrivacyUI();
+      updateHeuristicSuggestionText();
       updateApiKeyVisibility();
     });
   });
@@ -444,6 +503,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 loadSettings();
+loadHeuristicSuggestion();
 refreshStats();
 
 

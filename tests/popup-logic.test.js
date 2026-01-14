@@ -32,3 +32,10 @@ test("getThresholdHint uses scores-only hint when disabled", () => {
   const hint = getThresholdHint({ filterEnabled: false }, 10);
   assert.equal(hint, "Filtering disabled (scores only)");
 });
+
+test("popup logic handles missing settings safely", () => {
+  const normalized = normalizeFilterCollapse(null);
+  assert.equal(normalized, null);
+  const hint = getThresholdHint(undefined, 33);
+  assert.equal(hint, "Filtering disabled (scores only)");
+});

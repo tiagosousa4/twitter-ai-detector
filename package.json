@@ -7,6 +7,8 @@
     "test": "node tests/run-tests.js",
     "test:heuristics": "node tests/heuristics.test.js",
     "test:popup": "node tests/popup-logic.test.js",
-    "test:filtering": "node tests/filtering.test.js"
+    "test:filtering": "node tests/filtering.test.js",
+    "benchmark": "node scripts/run-benchmark.js",
+    "benchmark:all": "node scripts/run-benchmark-suite.js"
   }
 }

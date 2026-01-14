@@ -20,6 +20,17 @@ npm run test:popup
 npm run test:filtering
 ```
 
+Benchmark the heuristics:
+```
+npm run benchmark
+npm run benchmark:all
+node scripts/run-benchmark.js benchmarks/heuristics-benchmark-real.jsonl 72
+```
+
+`npm run benchmark` uses `benchmarks/heuristics-benchmark-real.jsonl`.
+If it is missing, build it with `node scripts/build-real-benchmark.js` (requires network).
+The real dataset stays local (gitignored).
+
 Coverage:
 - Heuristic scoring normalization and curve behavior
 - Popup logic (threshold hints, mutual exclusivity)

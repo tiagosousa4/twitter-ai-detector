@@ -7,3 +7,4 @@ pnpm-debug.log*
 Thumbs.db
 .env
 .env.*
+benchmarks/heuristics-benchmark-real.jsonl
