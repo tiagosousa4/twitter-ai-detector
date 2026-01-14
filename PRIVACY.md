@@ -1,27 +1,56 @@
 # Privacy Policy
 
+This policy explains how AI Tweet Detector handles data. It applies to the
+extension only, not to third-party providers.
+
 ## Summary
-AI Tweet Detector analyzes tweet text on Twitter/X to estimate AI likelihood. It can run in local-only mode (no API calls) or send text to the selected provider (Hugging Face or GPTZero).
+AI Tweet Detector analyzes tweet text to estimate AI likelihood. It can run
+entirely on-device (local-only mode) or send tweet text to a selected provider
+for scoring (Hugging Face or GPTZero).
+
+## Data Collected
+The extension processes:
+- Tweet text on Twitter/X pages
+- Configuration settings (threshold, toggles, model ID, provider)
+
+The extension does not collect usernames, profile data, or cookies.
 
 ## Data Sent Off-Device
-- Tweet text is sent to the chosen provider's API for scoring.
-- No usernames, profile data, or cookies are explicitly collected by the extension.
-- Provider services may log requests; refer to their privacy policies for details.
+When local-only mode is disabled:
+- Tweet text is sent to the selected provider API for scoring.
+- Provider services may log requests; refer to their privacy policies.
 
-## Data Stored Locally
-- API keys are stored in `chrome.storage.local` on your device and are not synced.
-- Non-sensitive settings (thresholds, toggles, model ID, provider) are stored in `chrome.storage.sync` for optional cross-device sync.
-- A local cache stores tweet scores and timestamps to reduce repeat requests.
-- Usage stats are stored locally for display in the popup.
+When local-only mode is enabled:
+- No tweet text is sent off-device.
+
+## Local Storage
+Stored in `chrome.storage.local`:
+- API keys (never synced)
+- Local cache of tweet scores (timestamped)
+- Usage statistics
+
+Stored in `chrome.storage.sync`:
+- Non-sensitive settings such as thresholds, toggles, and model ID
+
+Cache retention:
+- Max 500 items
+- TTL of 7 days
 
 ## User Controls
-- Clear cache: removes cached scores.
-- Reset stats: clears local stats.
-- Reset defaults: restores settings to defaults and clears local keys.
-- Local-only toggle: disables all network analysis.
+The popup provides:
+- Local-only toggle (prevents network analysis)
+- Clear cache (removes cached scores)
+- Reset stats (clears local stats)
+- Reset defaults (restores default settings)
 
 ## Data Sharing
-The extension does not sell or share data with third parties beyond the selected scoring provider.
+The extension does not sell or share data with third parties beyond the
+selected scoring provider.
 
 ## Changes
-If this policy changes, update this file and note changes in release notes.
+If this policy changes, update this file and document the change in release
+notes.
+
+## Contact
+For privacy questions, open an issue at:
+`https://github.com/tiagosousa4/twitter-ai-detector/issues`

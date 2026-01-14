@@ -36,6 +36,31 @@ const DEFAULT_LOCAL_SETTINGS = {
 const MODEL_ID_PATTERN =
   /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}\/[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}(?:@[a-zA-Z0-9._-]{1,64})?$/;
 
+const popupLogic =
+  typeof aiDetectorPopupLogic !== "undefined" ? aiDetectorPopupLogic : null;
+const normalizeFilterCollapse =
+  popupLogic && typeof popupLogic.normalizeFilterCollapse === "function"
+    ? popupLogic.normalizeFilterCollapse
+    : (settings) => settings;
+const getThresholdHint =
+  popupLogic && typeof popupLogic.getThresholdHint === "function"
+    ? popupLogic.getThresholdHint
+    : (settings, value) => {
+      const displayValue = Number.isFinite(Number(value)) ? value : "";
+      const collapsing = !!(settings && settings.collapseEnabled);
+      const filtering = settings && settings.filterEnabled !== false;
+
+      if (collapsing) {
+        return `Collapsing tweets above ${displayValue}% AI likelihood`;
+      }
+
+      if (filtering) {
+        return `Hiding tweets above ${displayValue}% AI likelihood`;
+      }
+
+      return "Filtering disabled (scores only)";
+    };
+
 const elements = {
   provider: document.getElementById("provider"),
   apiKeyLabel: document.getElementById("apiKeyLabel"),
@@ -68,27 +93,17 @@ const elements = {
   clearCache: document.getElementById("clearCache"),
   revealAll: document.getElementById("revealAll"),
   resetDefaults: document.getElementById("resetDefaults"),
-  resetStats: document.getElementById("resetStats")
+  resetStats: document.getElementById("resetStats"),
+  infoToggle: document.getElementById("infoToggle"),
+  infoPanel: document.getElementById("infoPanel"),
+  infoClose: document.getElementById("infoClose")
 };
 
 let currentSettings = { ...DEFAULT_SETTINGS };
 
-function normalizeFilterCollapse(settings) {
-  if (settings.collapseEnabled && settings.filterEnabled) {
-    return { ...settings, filterEnabled: false };
-  }
-  return settings;
-}
-
 function updateThresholdDisplay(value) {
   elements.thresholdValue.textContent = value;
-  const filtering = currentSettings.filterEnabled !== false;
-  const collapsing = !!currentSettings.collapseEnabled;
-  elements.thresholdHint.textContent = collapsing
-    ? `Collapsing tweets above ${value}% AI likelihood`
-    : filtering
-      ? `Hiding tweets above ${value}% AI likelihood`
-      : "Filtering disabled (scores only)";
+  elements.thresholdHint.textContent = getThresholdHint(currentSettings, value);
 }
 
 function setStatus(message, tone = "") {
@@ -172,6 +187,14 @@ function updatePrivacyUI() {
   } else {
     elements.privacyBanner.style.display = "block";
   }
+}
+
+function setInfoPanelVisible(visible) {
+  if (!elements.infoPanel || !elements.infoToggle) {
+    return;
+  }
+  elements.infoPanel.hidden = !visible;
+  elements.infoToggle.setAttribute("aria-expanded", visible ? "true" : "false");
 }
 
 function loadSettings() {
@@ -314,6 +337,19 @@ elements.localOnlyToggle.addEventListener("change", (event) => {
     "#34d399"
   );
 });
+
+if (elements.infoToggle) {
+  elements.infoToggle.addEventListener("click", () => {
+    const isOpen = elements.infoPanel && !elements.infoPanel.hidden;
+    setInfoPanelVisible(!isOpen);
+  });
+}
+
+if (elements.infoClose) {
+  elements.infoClose.addEventListener("click", () => {
+    setInfoPanelVisible(false);
+  });
+}
 
 elements.filterToggle.addEventListener("change", (event) => {
   const nextFilter = event.target.checked;

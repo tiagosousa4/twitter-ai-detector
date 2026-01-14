@@ -17,6 +17,8 @@ const DEFAULT_SETTINGS = {
 const TWEET_SELECTOR = "article[data-testid='tweet'], div[data-testid='tweet']";
 
 let settings = { ...DEFAULT_SETTINGS };
+const filteringLogic =
+  typeof aiDetectorFiltering !== "undefined" ? aiDetectorFiltering : null;
 const processedScores = new Map();
 const pendingTweetIds = new Set();
 
@@ -488,19 +490,41 @@ function revealTweet(element) {
   element.dataset.aiDetectorRevealed = "true";
 }
 
+function getFilterAction(settingsSnapshot, score) {
+  if (filteringLogic && typeof filteringLogic.getFilterAction === "function") {
+    return filteringLogic.getFilterAction(settingsSnapshot, score);
+  }
+
+  if (!settingsSnapshot || !settingsSnapshot.enabled) {
+    return "none";
+  }
+
+  const shouldCollapse =
+    settingsSnapshot.collapseEnabled && score >= settingsSnapshot.threshold;
+  const shouldHide =
+    !settingsSnapshot.collapseEnabled &&
+    settingsSnapshot.filterEnabled !== false &&
+    score >= settingsSnapshot.threshold;
+
+  if (shouldCollapse) {
+    return "collapse";
+  }
+
+  if (shouldHide) {
+    return "hide";
+  }
+
+  return "none";
+}
+
 function applyFiltering(element, score) {
   if (!settings.enabled) {
     return;
   }
 
-  const shouldCollapse =
-    settings.collapseEnabled && score >= settings.threshold;
-  const shouldHide =
-    !settings.collapseEnabled &&
-    settings.filterEnabled &&
-    score >= settings.threshold;
+  const action = getFilterAction(settings, score);
 
-  if (shouldCollapse) {
+  if (action === "collapse") {
     if (element.dataset.aiDetectorHidden === "true") {
       clearHiddenState(element);
     }
@@ -508,7 +532,7 @@ function applyFiltering(element, score) {
     return;
   }
 
-  if (shouldHide) {
+  if (action === "hide") {
     if (element.dataset.aiDetectorCollapsed === "true") {
       clearHiddenState(element);
     }

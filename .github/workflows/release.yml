@@ -22,7 +22,9 @@ jobs:
             manifest.json \
             background.js \
             content.js \
+            filtering.js \
             popup.html \
+            popup-logic.js \
             popup.js \
             styles.css \
             heuristics.js \

@@ -1,60 +1,70 @@
-﻿# AI Tweet Detector (Chrome Extension)
+# AI Tweet Detector (Chrome Extension)
 
-Detects AI-generated tweets on Twitter/X using Hugging Face (default) or GPTZero. The extension adds an AI likelihood badge to each tweet, can hide tweets above a configurable threshold, and provides usage stats in the popup.
+Detects AI-generated tweets on Twitter/X using Hugging Face (default) or GPTZero.
+The extension adds AI likelihood badges, can hide or collapse tweets above a threshold,
+and provides usage stats in the popup.
+
+## User Onboarding
+- Open the popup and choose local-only for on-device scoring, or add an API key for network analysis.
+- Set your threshold. Lower means stricter filtering.
+- Choose Hide or Collapse. They are mutually exclusive.
+- Use Clear cache after changing models or thresholds.
+
+The same checklist is available from the Info button in the popup.
 
 ## Features
 - Hugging Face Inference API (default) or GPTZero integration
-- Rate limiting, caching, and heuristic fallback
-- Badge overlay on tweets with AI likelihood score
-- Optional filtering + reveal controls
+- Local-only heuristic scoring with API fallback
+- AI likelihood badge on each tweet
+- Hide or collapse tweets above a configurable threshold
 - Configurable contexts (timeline, replies, search, tweet pages)
+- Local cache and usage statistics
 
 ## Setup
 1. Open Chrome and go to `chrome://extensions`.
 2. Enable **Developer mode** (top-right).
 3. Click **Load unpacked** and select the `ai-tweet-detector` folder.
-4. Click the extension icon, choose local-only or network analysis, and paste your API key if needed.
+4. Open the extension popup, choose local-only or network analysis, and paste your API key if needed.
 5. Refresh Twitter/X to start analyzing.
 
-## Hugging Face (Default)
+## Providers
+### Hugging Face (Default)
 - Create a token at https://huggingface.co/settings/tokens (read access is enough).
 - Default model: `openai-community/roberta-large-openai-detector`
-- You can change the model ID in the popup.
 - Requests are routed through `https://router.huggingface.co`.
 
-## GPTZero (Optional)
-- Create a GPTZero account and generate an API key at https://gptzero.me.
+### GPTZero (Optional)
+- Create an account and generate an API key at https://gptzero.me.
 - Switch the provider to GPTZero in the popup.
 
-## Settings
+## Configuration
 Open the extension popup to:
-- Select provider (Hugging Face or GPTZero)
-- Enable/disable detection
-- Toggle filtering (hide tweets above the threshold or show scores only)
-- Adjust the filter threshold
+- Enable or disable detection
+- Hide tweets above the threshold, or collapse them instead
+- Adjust the threshold
 - Toggle analysis contexts
-- View usage stats and reset cache
+- View usage stats, clear cache, or reveal hidden tweets
 
-## Privacy
-See `PRIVACY.md` for data handling and storage details.
+## Data Handling
+See `PRIVACY.md` for the full data handling policy.
 
 ## Security
 See `SECURITY.md` for vulnerability reporting.
 
-## Data Handling
-- Tweet text is sent to the selected provider (Hugging Face or GPTZero) for scoring.
-- API keys are stored locally in your browser profile and are not synced.
-- Scores are cached locally to reduce repeat requests; clear the cache from the popup.
-- Local-only mode keeps all analysis on-device and skips API calls.
+## Testing
+Automated tests:
+- `npm test` runs the local test suite
+- `npm run test:heuristics` for heuristic scoring
+- `npm run test:popup` for popup logic
+- `npm run test:filtering` for filtering decisions
 
-## Notes
-- When API errors or limits are hit, the extension switches to heuristic scoring.
-- Hugging Face usage depends on your HF account limits.
+Manual testing steps are documented in `TESTING.md`.
 
 ## Development
 - Optional secret-scan hook: `git config core.hooksPath githooks`
 - Bypass on false positives: `SKIP_SECRET_SCAN=1 git commit ...` or `git commit --no-verify`
-- GitHub Actions secret scan runs on pushes and pull requests.
+- CI runs tests on pushes and pull requests.
+- Release workflow builds a zip artifact on tags/releases.
 
 ## File Structure
 ```
@@ -62,16 +72,26 @@ ai-tweet-detector/
 |-- manifest.json
 |-- background.js
 |-- content.js
+|-- filtering.js
+|-- heuristics.js
 |-- popup.html
+|-- popup-logic.js
 |-- popup.js
 |-- styles.css
+|-- package.json
 |-- PRIVACY.md
 |-- SECURITY.md
+|-- TESTING.md
 |-- githooks/
 |   `-- pre-commit
+|-- tests/
+|   |-- filtering.test.js
+|   |-- heuristics.test.js
+|   |-- popup-logic.test.js
+|   |-- run-tests.js
+|   `-- test-harness.js
 `-- icons/
     |-- icon16.png
     |-- icon48.png
     `-- icon128.png
 ```
-

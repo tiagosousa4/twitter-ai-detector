@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const { test } = require("./test-harness");
 
 const {
   HEURISTIC_SCORE_POWER,
@@ -6,31 +7,6 @@ const {
   applyHeuristicCurve,
   heuristicScore
 } = require("../heuristics");
-
-const tests = [];
-
-function test(name, fn) {
-  tests.push({ name, fn });
-}
-
-function run() {
-  let failed = 0;
-
-  tests.forEach(({ name, fn }) => {
-    try {
-      fn();
-      console.log(`ok - ${name}`);
-    } catch (err) {
-      failed += 1;
-      console.error(`not ok - ${name}`);
-      console.error(err);
-    }
-  });
-
-  if (failed > 0) {
-    process.exitCode = 1;
-  }
-}
 
 test("normalizeScore clamps and rounds scores", () => {
   assert.equal(normalizeScore(-5), 0);
@@ -62,5 +38,3 @@ test("heuristicScore increases with AI-like markers", () => {
   );
   assert.ok(boosted > base);
 });
-
-run();

@@ -4,7 +4,9 @@
   "version": "1.1.0",
   "description": "Local tooling for AI Tweet Detector",
   "scripts": {
-    "test": "node tests/heuristics.test.js",
-    "test:heuristics": "node tests/heuristics.test.js"
+    "test": "node tests/run-tests.js",
+    "test:heuristics": "node tests/heuristics.test.js",
+    "test:popup": "node tests/popup-logic.test.js",
+    "test:filtering": "node tests/filtering.test.js"
   }
 }
