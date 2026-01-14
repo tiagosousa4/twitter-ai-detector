@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build extension zip
+        run: |
+          mkdir -p dist
+          zip -r "dist/ai-tweet-detector-${GITHUB_REF_NAME}.zip" \
+            manifest.json \
+            background.js \
+            content.js \
+            popup.html \
+            popup.js \
+            styles.css \
+            heuristics.js \
+            icons
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-tweet-detector-${{ github.ref_name }}
+          path: dist/ai-tweet-detector-${{ github.ref_name }}.zip
+      - name: Attach to GitHub release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/ai-tweet-detector-${{ github.ref_name }}.zip
