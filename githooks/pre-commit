@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "${SKIP_SECRET_SCAN:-}" = "1" ]; then
+  exit 0
+fi
+
+files=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -z "$files" ]; then
+  exit 0
+fi
+
+pattern='(hf_[A-Za-z0-9]{16,}|sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,})'
+found=0
+
+for f in $files; do
+  if [ ! -f "$f" ]; then
+    continue
+  fi
+
+  if command -v rg >/dev/null 2>&1; then
+    if rg -n "$pattern" "$f" >/dev/null 2>&1; then
+      echo "Possible secret detected in $f. Commit blocked."
+      rg -n "$pattern" "$f" || true
+      found=1
+    fi
+  else
+    if grep -nE "$pattern" "$f" >/dev/null 2>&1; then
+      echo "Possible secret detected in $f. Commit blocked."
+      grep -nE "$pattern" "$f" || true
+      found=1
+    fi
+  fi
+done
+
+if [ "$found" -eq 1 ]; then
+  echo "If this is a false positive, set SKIP_SECRET_SCAN=1 or use --no-verify."
+  exit 1
+fi

@@ -1,0 +1,343 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Tweet Detector</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #111827;
+        --accent: #38bdf8;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --danger: #f87171;
+        --success: #34d399;
+        --warning: #fbbf24;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      #app {
+        width: 320px;
+        min-height: 400px;
+        padding: 14px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      h1 {
+        font-size: 16px;
+        margin: 0;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+      }
+
+      section {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      h2 {
+        font-size: 13px;
+        margin: 0;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+
+      label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      input[type="text"],
+      input[type="password"],
+      select {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #1f2937;
+        background: #0b1220;
+        color: var(--text);
+        font-size: 12px;
+        box-sizing: border-box;
+      }
+
+      input[type="range"] {
+        width: 100%;
+      }
+
+      button {
+        border: none;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #0f172a;
+        font-weight: 700;
+        padding: 8px 10px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      button.secondary {
+        background: #1f2937;
+        color: var(--text);
+      }
+
+      button.danger {
+        background: var(--danger);
+        color: #0f172a;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .hint {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .hint a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .status {
+        font-size: 11px;
+        color: var(--warning);
+      }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .stat-card {
+        background: #0b1220;
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .stat-card strong {
+        display: block;
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 38px;
+        height: 20px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: #1f2937;
+        border-radius: 999px;
+        transition: 0.2s;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 14px;
+        width: 14px;
+        left: 3px;
+        bottom: 3px;
+        background: #94a3b8;
+        border-radius: 50%;
+        transition: 0.2s;
+      }
+
+      .switch input:checked + .slider {
+        background: var(--accent);
+      }
+
+      .switch input:checked + .slider:before {
+        transform: translateX(18px);
+        background: #0f172a;
+      }
+
+      .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 12px;
+      }
+
+      .checkbox-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text);
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .api-usage {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      #modelRow {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .privacy-banner {
+        background: #0b1220;
+        border-left: 3px solid var(--warning);
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 11px;
+        color: var(--text);
+      }
+
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1>AI Tweet Detector</h1>
+
+      <section>
+        <h2>API Configuration</h2>
+        <div class="row">
+          <label for="provider">Provider</label>
+          <select id="provider">
+            <option value="huggingface">Hugging Face</option>
+            <option value="gptzero">GPTZero</option>
+          </select>
+        </div>
+        <label id="apiKeyLabel" for="apiKey">API Key</label>
+        <input type="password" id="apiKey" placeholder="Paste your API key" />
+        <div class="row">
+          <label for="showApiKeyToggle">Show key</label>
+          <label class="switch">
+            <input type="checkbox" id="showApiKeyToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="modelRow">
+          <label for="hfModel">HF Model</label>
+          <input type="text" id="hfModel" placeholder="Model ID" />
+          <div class="hint" id="modelHint">
+            Default: openai-community/roberta-large-openai-detector
+          </div>
+        </div>
+        <div class="row">
+          <label for="localOnlyToggle">Local-only mode</label>
+          <label class="switch">
+            <input type="checkbox" id="localOnlyToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="hint">Local-only uses heuristics and avoids API calls.</div>
+        <div class="privacy-banner" id="privacyBanner">
+          Network analysis enabled: tweet text is sent to the selected provider.
+        </div>
+        <button id="saveApiKey">Save API Key</button>
+        <div class="hint">
+          <a id="signupLink" href="https://gptzero.me" target="_blank"
+            >Get an API key</a
+          >
+        </div>
+        <div class="api-usage" id="apiUsage">Usage: 0 chars</div>
+        <div class="status" id="apiStatus"></div>
+      </section>
+
+      <section>
+        <h2>Detection Controls</h2>
+        <div class="row">
+          <label for="enabledToggle">Enable AI Detection</label>
+          <label class="switch">
+            <input type="checkbox" id="enabledToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="row">
+          <label for="filterToggle">Hide tweets above threshold</label>
+          <label class="switch">
+            <input type="checkbox" id="filterToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="row">
+          <label for="collapseToggle">Collapse tweets</label>
+          <label class="switch">
+            <input type="checkbox" id="collapseToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <label for="threshold">Filter Threshold: <span id="thresholdValue">75</span>%</label>
+        <input type="range" id="threshold" min="0" max="100" value="75" />
+        <div class="hint" id="thresholdHint">Hiding tweets above 75% AI likelihood</div>
+      </section>
+
+      <section>
+        <h2>Analysis Contexts</h2>
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="analyzeTimeline" /> Analyze timeline tweets</label>
+          <label><input type="checkbox" id="analyzeReplies" /> Analyze replies</label>
+          <label><input type="checkbox" id="analyzeSearch" /> Analyze search results</label>
+          <label><input type="checkbox" id="analyzeTweetPages" /> Analyze individual tweet pages</label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Statistics Dashboard</h2>
+        <div class="stat-grid">
+          <div class="stat-card"><strong id="statTotal">0</strong> Total analyzed</div>
+          <div class="stat-card"><strong id="statAvg">0%</strong> Average AI score</div>
+          <div class="stat-card"><strong id="statHidden">0</strong> Tweets hidden</div>
+          <div class="stat-card"><strong id="statRemaining">N/A</strong> Chars remaining</div>
+        </div>
+        <div class="status" id="fallbackStatus"></div>
+      </section>
+
+      <section>
+        <h2>Quick Actions</h2>
+        <div class="actions">
+          <button id="clearCache" class="secondary">Clear cache</button>
+          <button id="revealAll" class="secondary">Reveal hidden</button>
+          <button id="resetDefaults" class="danger">Reset defaults</button>
+          <button id="resetStats" class="secondary">Reset stats</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
+

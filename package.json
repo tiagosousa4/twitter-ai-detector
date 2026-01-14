@@ -1,0 +1,10 @@
+{
+  "name": "ai-tweet-detector",
+  "private": true,
+  "version": "1.1.0",
+  "description": "Local tooling for AI Tweet Detector",
+  "scripts": {
+    "test": "node tests/heuristics.test.js",
+    "test:heuristics": "node tests/heuristics.test.js"
+  }
+}
