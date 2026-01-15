@@ -103,12 +103,12 @@ const elements = {
 let currentSettings = { ...DEFAULT_SETTINGS };
 let heuristicSuggestion = {
   threshold: 72,
-  accuracy: 93.8,
-  precision: 99.5,
-  recall: 88.0,
+  accuracy: 98,
+  precision: 99.6,
+  recall: 96.4,
   conservativeThreshold: 72,
-  conservativePrecision: 99.5,
-  conservativeRecall: 88.0,
+  conservativePrecision: 99.6,
+  conservativeRecall: 96.4,
   precisionTarget: 99,
   samples: 500,
   note: "Suggested from benchmark sweep (max F1)."

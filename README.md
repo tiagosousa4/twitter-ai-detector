@@ -3,6 +3,7 @@
 Detects AI-generated tweets on Twitter/X using Hugging Face (default) or GPTZero.
 The extension adds AI likelihood badges, can hide or collapse tweets above a threshold,
 and provides usage stats in the popup.
+Not affiliated with X Corp. or Twitter.
 
 ## User Onboarding
 - Open the popup and choose local-only for on-device scoring, or add an API key for network analysis.
@@ -14,7 +15,7 @@ The same checklist is available from the Info button in the popup.
 
 ## Features
 - Hugging Face Inference API (default) or GPTZero integration
-- Local-only heuristic scoring with API fallback
+- Local-only heuristic scoring or API-based scoring with heuristic fallback
 - AI likelihood badge on each tweet
 - Hide or collapse tweets above a configurable threshold
 - Configurable contexts (timeline, replies, search, tweet pages)

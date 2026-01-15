@@ -13,9 +13,6 @@
     "https://api.gptzero.me/*",
     "https://router.huggingface.co/*"
   ],
-  "externally_connectable": {
-    "matches": ["https://twitter.com/*", "https://x.com/*"]
-  },
   "background": {
     "service_worker": "background.js"
   },

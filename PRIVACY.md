@@ -14,11 +14,14 @@ The extension processes:
 - Configuration settings (threshold, toggles, model ID, provider)
 
 The extension does not collect usernames, profile data, or cookies.
+We do not operate a backend service and do not receive or store tweet text,
+API keys, or other content on our servers.
 
 ## Data Sent Off-Device
 When local-only mode is disabled:
 - Tweet text is sent to the selected provider API for scoring.
 - Provider services may log requests; refer to their privacy policies.
+We do not receive a copy of the tweet text or the provider responses.
 
 When local-only mode is enabled:
 - No tweet text is sent off-device.
@@ -26,8 +29,13 @@ When local-only mode is enabled:
 ## Local Storage
 Stored in `chrome.storage.local`:
 - API keys (never synced)
-- Local cache of tweet scores (timestamped)
+- Local cache of tweet scores keyed by tweet IDs (timestamped)
 - Usage statistics
+API keys stay on-device and are only used to authenticate requests to the
+selected provider.
+
+Stored in `chrome.storage.session` (or `chrome.storage.local` fallback):
+- Revealed tweet IDs (up to 300) so hidden/collapsed tweets stay visible
 
 Stored in `chrome.storage.sync`:
 - Non-sensitive settings such as thresholds, toggles, and model ID

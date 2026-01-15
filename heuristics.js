@@ -74,7 +74,7 @@
     /\bearnings\b/gi,
     /\btrading\b/gi,
     /\btrader(?:s)?\b/gi,
-    /\bcrypto(?:currency|currencies)?\b/gi,
+    /\bcrypto(?:\s*currenc(?:y|ies))?\b/gi,
     /\bbitcoin\b/gi,
     /\bblockchain\b/gi,
     /\bdiversif(?:y|ying|ication)\b/gi,
@@ -101,6 +101,7 @@
   ];
   const SOFT_TOPIC_PATTERNS = [
     /\bcomputer science\b/gi,
+    /\bcomputer scientist(?:s)?\b/gi,
     /\bcoding\b/gi,
     /\bprogramming\b/gi,
     /\bsoftware\b/gi,
@@ -109,6 +110,65 @@
     /\binnovat(?:ion|ive|e|es|ed|ing)?\b/gi,
     /\btechnology\b/gi,
     /\bdigital\b/gi
+  ];
+  const PROMO_TECH_PATTERNS = [
+    /\bdid you know\b/gi,
+    /\bhave you tried\b/gi,
+    /\bwant to learn\b/gi,
+    /\b(?:isn'?t|is not|not) just\b/gi,
+    /\bshaping the future\b/gi,
+    /\btech-driven\b/gi,
+    /\bnew literacy\b/gi,
+    /\bdigital age\b/gi,
+    /\bdigital world\b/gi,
+    /\bbackbone of (?:our )?digital world\b/gi,
+    /\bdriving innovation\b/gi,
+    /\bkey skill\b/gi,
+    /\bessential skill\b/gi,
+    /\bworld of possibilities\b/gi,
+    /\bopens? (?:up )?(?:a )?(?:world|door) of\b/gi,
+    /\btreasure trove\b/gi,
+    /\bempowers? (?:you|us) to\b/gi,
+    /\blearn(?:ing)? to code\b/gi,
+    /\blearn(?:ing)? coding\b/gi,
+    /\blearn(?:ing)? computer science\b/gi,
+    /\blike learning a new language\b/gi,
+    /\bgrasp the basics\b/gi,
+    /\bbackbone of\b/gi,
+    /\blines of code\b/gi,
+    /\bexciting field\b/gi,
+    /\bshape a future\b/gi,
+    /\bharness (?:it|this|them)\b/gi,
+    /\bskills? (?:is|are) skyrocketing\b/gi,
+    /\bdemand for (?:computer science|coding|programming|tech(?:nology)?) skills?\b/gi,
+    /\bessential (?:for|to)\b/gi,
+    /\bbecoming (?:an )?essential\b/gi
+  ];
+  const PROMO_TECH_SECONDARY_PATTERNS = [
+    /\bproblem[- ]solving\b/gi,
+    /\bcreativity\b/gi,
+    /\binnovation\b/gi
+  ];
+  const FINANCE_NEWS_PATTERNS = [
+    /\beconomists suggest\b/gi,
+    /\bus dollar\b/gi,
+    /\bmajor currencies\b/gi,
+    /\bregulatory landscape\b/gi,
+    /\bdigital assets\b/gi,
+    /\bfintech\b/gi,
+    /\bincreased competition\b/gi,
+    /\bexecutive board\b/gi,
+    /\bdisbursement\b/gi,
+    /\bfinancial support\b/gi,
+    /\bconference call\b/gi,
+    /\bedited transcript\b/gi,
+    /\bmonetary authority\b/gi,
+    /\bincrease stake\b/gi,
+    /\bstock market analysis\b/gi,
+    /\b#stockmarketanalysis\b/gi,
+    /\bpoised to\b/gi,
+    /\bshowing signs of recovery\b/gi,
+    /\bperforming steadily\b/gi
   ];
   const CORE_TOPIC_PATTERNS = [
     /\bartificial intelligence\b/gi,
@@ -123,7 +183,7 @@
     /\bautomation\b/gi,
     /\bcybersecurity\b/gi,
     /\bquantum\b/gi,
-    /\bcrypto(?:currency|currencies)?\b/gi,
+    /\bcrypto(?:\s*currenc(?:y|ies))?\b/gi,
     /\bbitcoin\b/gi,
     /\bblockchain\b/gi,
     /\bstock(?:s)?\b/gi,
@@ -276,12 +336,42 @@
 
     const topicMatches = countMatches(TOPIC_PATTERNS, safeText);
     const softTopicMatches = countMatches(SOFT_TOPIC_PATTERNS, safeText);
+    const promoTechPrimaryMatches = countMatches(PROMO_TECH_PATTERNS, safeText);
+    const promoTechSecondaryMatches = countMatches(
+      PROMO_TECH_SECONDARY_PATTERNS,
+      safeText
+    );
+    const financeNewsMatches = countMatches(FINANCE_NEWS_PATTERNS, safeText);
+    const promoTechMatches =
+      promoTechPrimaryMatches +
+      (promoTechPrimaryMatches > 0 ? promoTechSecondaryMatches : 0);
     const coreTopicMatches = countMatches(CORE_TOPIC_PATTERNS, safeText);
     if (topicMatches > 0) {
       positiveScore += Math.min(topicMatches * 6, 36) * lengthFactor;
     }
     if (softTopicMatches > 0) {
       positiveScore += Math.min(softTopicMatches * 2, 8) * lengthFactor;
+    }
+    if (
+      financeNewsMatches > 0 &&
+      (wordCount >= 8 || (wordCount >= 6 && topicMatches >= 2))
+    ) {
+      positiveScore += Math.min(financeNewsMatches * 7, 21) * lengthFactor;
+      if (financeNewsMatches >= 2 && wordCount >= 10) {
+        positiveScore += 4 * lengthFactor;
+      }
+    }
+    const hasPromoTech =
+      promoTechPrimaryMatches > 0 &&
+      (softTopicMatches > 0 || promoTechPrimaryMatches >= 2);
+    if (hasPromoTech && wordCount >= 8) {
+      positiveScore += Math.min(promoTechMatches * 7, 21) * lengthFactor;
+      if (promoTechMatches >= 2 && wordCount >= 12) {
+        positiveScore += 8 * lengthFactor;
+      }
+      if (softTopicMatches >= 2 && wordCount >= 12) {
+        positiveScore += 6 * lengthFactor;
+      }
     }
     if (topicMatches >= 2 && wordCount >= 8) {
       positiveScore = Math.max(positiveScore, 75);
@@ -375,6 +465,22 @@
       positiveScore += 6 * lengthFactor;
     }
     if (socialCounts.hashtagCount >= 3) {
+      positiveScore += 6 * lengthFactor;
+    }
+    if (
+      hasPromoTech &&
+      wordCount >= 10 &&
+      (socialCounts.hashtagCount >= 1 || EMOJI_PATTERN.test(safeText))
+    ) {
+      positiveScore += 6 * lengthFactor;
+    }
+    if (
+      hasPromoTech &&
+      softTopicMatches >= 2 &&
+      wordCount >= 10 &&
+      socialCounts.mentionCount === 0 &&
+      socialCounts.urlCount === 0
+    ) {
       positiveScore += 6 * lengthFactor;
     }
     if (
