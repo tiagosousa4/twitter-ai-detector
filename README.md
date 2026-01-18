@@ -3,6 +3,7 @@
 Detects AI-generated tweets on Twitter/X using Hugging Face (default) or GPTZero.
 The extension adds AI likelihood badges, can hide or collapse tweets above a threshold,
 and provides usage stats in the popup.
+Results are probabilistic and may be inaccurate.
 Not affiliated with X Corp. or Twitter.
 
 ## User Onboarding
