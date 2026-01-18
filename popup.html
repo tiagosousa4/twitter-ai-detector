@@ -112,6 +112,45 @@
         color: var(--muted);
       }
 
+      .hint-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .hint-row .hint {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .label-with-info {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .info-icon {
+        border: 1px solid #1f2937;
+        background: #0b1220;
+        color: var(--muted);
+        border-radius: 999px;
+        width: 18px;
+        height: 18px;
+        padding: 0;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: default;
+      }
+
+      .info-icon:hover {
+        color: var(--text);
+        border-color: #334155;
+      }
+
       .hint a {
         color: var(--accent);
         text-decoration: none;
@@ -281,7 +320,17 @@
       <section>
         <h2>API Configuration</h2>
         <div class="row">
-          <label for="provider">Provider</label>
+          <span class="label-with-info">
+            <label for="provider">Provider</label>
+            <button
+              class="info-icon"
+              type="button"
+              aria-label="Provider info"
+              title="Detection results may vary depending on the model you select."
+            >
+              i
+            </button>
+          </span>
           <select id="provider">
             <option value="huggingface">Hugging Face</option>
             <option value="gptzero">GPTZero</option>
@@ -316,7 +365,7 @@
         </div>
         <button id="saveApiKey">Save API Key</button>
         <div class="hint">
-          <a id="signupLink" href="https://gptzero.me" target="_blank"
+          <a id="signupLink" href="https://gptzero.me" target="_blank" rel="noopener noreferrer"
             >Get an API key</a
           >
         </div>
@@ -375,7 +424,18 @@
         <label for="threshold">Filter Threshold: <span id="thresholdValue">72</span>%</label>
         <input type="range" id="threshold" min="0" max="100" value="72" />
         <div class="hint" id="thresholdHint">Hiding tweets above 72% AI likelihood</div>
-        <div class="hint" id="heuristicSuggestion" hidden></div>
+        <div class="hint-row" id="heuristicSuggestionRow" hidden>
+          <div class="hint" id="heuristicSuggestion"></div>
+          <button
+            class="info-icon"
+            id="heuristicSuggestionInfo"
+            type="button"
+            aria-label="Heuristic suggestion info"
+            title="These stats are indicative of results on the internal test dataset and are not representative of real tweets."
+          >
+            i
+          </button>
+        </div>
       </section>
 
       <section>

@@ -490,6 +490,10 @@ function setBadgeScore(badge, score, method) {
 }
 
 function collapseTweet(element, score) {
+  if (!element || !element.parentNode) {
+    return;
+  }
+
   if (element.dataset.aiDetectorCollapsed === "true") {
     return;
   }
@@ -587,6 +591,10 @@ function clearHiddenState(element) {
 }
 
 function hideTweet(element, score) {
+  if (!element || !element.parentNode) {
+    return;
+  }
+
   if (element.dataset.aiDetectorHidden === "true") {
     return;
   }
@@ -692,7 +700,7 @@ function getFilterAction(settingsSnapshot, score) {
 }
 
 function applyFiltering(element, score) {
-  if (!settings.enabled) {
+  if (!element || !element.isConnected || !settings.enabled) {
     return;
   }
 
@@ -782,26 +790,29 @@ async function analyzeTweet(element) {
     });
 
     pendingTweetIds.delete(tweetId);
+    const stillConnected = element.isConnected;
 
     if (!result || !result.success) {
-      if (result && result.error === "API_KEY_MISSING") {
-        setBadgeError(badge, "API key");
-        badge.title = "Add your API key in the extension popup";
-      } else if (result && result.error === "API_KEY_INVALID") {
-        setBadgeError(badge, "Invalid key");
-        badge.title = "Your API key is invalid";
-      } else if (result && result.error === "MODEL_INVALID") {
-        setBadgeError(badge, "Model");
-        badge.title = "Invalid Hugging Face model ID";
-      } else if (result && result.error === "MODEL_NOT_FOUND") {
-        setBadgeError(badge, "Model");
-        badge.title = "Hugging Face model not found";
-      } else if (result && result.error === "ENDPOINT_UNAVAILABLE") {
-        setBadgeError(badge, "HF API");
-        badge.title = "Hugging Face endpoint unavailable";
-      } else {
-        setBadgeError(badge, "Error");
-        badge.title = "Unable to analyze this tweet";
+      if (stillConnected) {
+        if (result && result.error === "API_KEY_MISSING") {
+          setBadgeError(badge, "API key");
+          badge.title = "Add your API key in the extension popup";
+        } else if (result && result.error === "API_KEY_INVALID") {
+          setBadgeError(badge, "Invalid key");
+          badge.title = "Your API key is invalid";
+        } else if (result && result.error === "MODEL_INVALID") {
+          setBadgeError(badge, "Model");
+          badge.title = "Invalid Hugging Face model ID";
+        } else if (result && result.error === "MODEL_NOT_FOUND") {
+          setBadgeError(badge, "Model");
+          badge.title = "Hugging Face model not found";
+        } else if (result && result.error === "ENDPOINT_UNAVAILABLE") {
+          setBadgeError(badge, "HF API");
+          badge.title = "Hugging Face endpoint unavailable";
+        } else {
+          setBadgeError(badge, "Error");
+          badge.title = "Unable to analyze this tweet";
+        }
       }
       return;
     }
@@ -810,6 +821,10 @@ async function analyzeTweet(element) {
       score: result.score,
       method: result.method
     });
+
+    if (!stillConnected) {
+      return;
+    }
 
     setBadgeScore(badge, result.score, result.method);
     applyFiltering(element, result.score);
@@ -878,6 +893,12 @@ function observeTweets() {
 function updateSettings() {
   chrome.storage.sync.get(DEFAULT_SETTINGS, (res) => {
     settings = { ...DEFAULT_SETTINGS, ...res };
+
+    if (!settings.enabled) {
+      revealAllHiddenTweets();
+      return;
+    }
+
     processedScores.forEach((entry, tweetId) => {
       const element = document.querySelector(
         `${TWEET_SELECTOR}[data-ai-detector-id='${tweetId}']`
@@ -945,7 +966,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     processedScores.clear();
     pendingTweetIds.clear();
     revealedTweetIds.clear();
+    analyzeQueue.length = 0;
     clearRevealedTweetIds();
+
+    revealAllHiddenTweets();
+
+    const tweets = Array.from(document.querySelectorAll(TWEET_SELECTOR));
+    tweets.forEach((tweet) => {
+      if (tweet && tweet.dataset) {
+        tweet.dataset.aiDetectorQueued = "false";
+      }
+    });
+
+    if (settings.enabled) {
+      tweets.forEach((tweet) => {
+        enqueueTweet(tweet);
+      });
+    }
+
     sendResponse({ success: true });
   }
 });

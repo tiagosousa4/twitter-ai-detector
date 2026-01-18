@@ -97,7 +97,8 @@ const elements = {
   infoToggle: document.getElementById("infoToggle"),
   infoPanel: document.getElementById("infoPanel"),
   infoClose: document.getElementById("infoClose"),
-  heuristicSuggestion: document.getElementById("heuristicSuggestion")
+  heuristicSuggestion: document.getElementById("heuristicSuggestion"),
+  heuristicSuggestionRow: document.getElementById("heuristicSuggestionRow")
 };
 
 let currentSettings = { ...DEFAULT_SETTINGS };
@@ -201,7 +202,9 @@ function updatePrivacyUI() {
     elements.privacyBanner.style.display = "block";
   }
 
-  if (elements.heuristicSuggestion) {
+  if (elements.heuristicSuggestionRow) {
+    elements.heuristicSuggestionRow.hidden = !localOnly;
+  } else if (elements.heuristicSuggestion) {
     elements.heuristicSuggestion.hidden = !localOnly;
   }
 }

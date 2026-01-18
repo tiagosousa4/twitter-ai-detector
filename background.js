@@ -77,6 +77,7 @@ let cacheLoaded = false;
 let statsLoaded = false;
 let cache = {};
 let stats = { ...DEFAULT_STATS };
+let settingsReady = null;
 
 let queue = [];
 let processing = false;
@@ -143,12 +144,17 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   });
 });
 
-async function bootstrapSettings() {
-  await migrateSecrets();
-  await refreshSettingsCache();
+function ensureSettingsReady() {
+  if (!settingsReady) {
+    settingsReady = (async () => {
+      await migrateSecrets();
+      await refreshSettingsCache();
+    })();
+  }
+  return settingsReady;
 }
 
-bootstrapSettings();
+ensureSettingsReady();
 
 
 function buildHuggingFaceEndpoints(safeModel) {
@@ -290,6 +296,12 @@ async function recordError(message) {
   stats.apiErrors += 1;
   stats.lastError = message;
   await saveStats();
+}
+
+async function buildHeuristicResult(text, provider) {
+  const score = heuristicScore(text);
+  await updateStatsWithScore(score, "heuristic", 0, provider);
+  return { success: true, score, method: "heuristic" };
 }
 
 
@@ -516,13 +528,12 @@ async function callHuggingFaceWithRetries(text, apiKey, model, safeModel) {
 }
 
 async function analyzeText(text) {
+  await ensureSettingsReady();
   const provider = settingsCache.provider || "huggingface";
   await syncStatsProvider(provider);
 
   if (settingsCache.localOnly) {
-    const score = heuristicScore(text);
-    await updateStatsWithScore(score, "heuristic", 0, provider);
-    return { success: true, score, method: "heuristic" };
+    return buildHeuristicResult(text, provider);
   }
 
   if (provider === "gptzero") {
@@ -533,9 +544,7 @@ async function analyzeText(text) {
     }
 
     if (stats.fallbackMode || stats.apiCharsUsed >= GPTZERO_LIMIT) {
-      const score = heuristicScore(text);
-      await updateStatsWithScore(score, "heuristic", 0, provider);
-      return { success: true, score, method: "heuristic" };
+      return buildHeuristicResult(text, provider);
     }
 
     try {
@@ -551,15 +560,11 @@ async function analyzeText(text) {
       if (err.type === "rate") {
         await recordError("Rate limit exceeded, switching to heuristics");
         await setFallbackMode(true);
-        const score = heuristicScore(text);
-        await updateStatsWithScore(score, "heuristic", 0, provider);
-        return { success: true, score, method: "heuristic" };
+        return buildHeuristicResult(text, provider);
       }
 
       await recordError("API error, using heuristics");
-      const fallbackScore = heuristicScore(text);
-      await updateStatsWithScore(fallbackScore, "heuristic", 0, provider);
-      return { success: true, score: fallbackScore, method: "heuristic" };
+      return buildHeuristicResult(text, provider);
     }
   }
 
@@ -577,9 +582,7 @@ async function analyzeText(text) {
   }
 
   if (stats.fallbackMode) {
-    const score = heuristicScore(text);
-    await updateStatsWithScore(score, "heuristic", 0, provider);
-    return { success: true, score, method: "heuristic" };
+    return buildHeuristicResult(text, provider);
   }
 
   try {
@@ -610,15 +613,11 @@ async function analyzeText(text) {
     if (err.type === "rate") {
       await recordError("Rate limit exceeded, switching to heuristics");
       await setFallbackMode(true);
-      const score = heuristicScore(text);
-      await updateStatsWithScore(score, "heuristic", 0, provider);
-      return { success: true, score, method: "heuristic" };
+      return buildHeuristicResult(text, provider);
     }
 
     await recordError("API error, using heuristics");
-    const fallbackScore = heuristicScore(text);
-    await updateStatsWithScore(fallbackScore, "heuristic", 0, provider);
-    return { success: true, score: fallbackScore, method: "heuristic" };
+    return buildHeuristicResult(text, provider);
   }
 }
 
