@@ -22,6 +22,7 @@ API keys, or other content on our servers.
 When local-only mode is disabled:
 - Tweet text is sent to the selected provider API for scoring (truncated to 5,000 characters).
 - Provider services may log requests; refer to their privacy policies.
+  Provider services may process data in other countries; refer to their policies for data location and transfers.
 We do not receive a copy of the tweet text or the provider responses.
 
 When local-only mode is enabled:
