@@ -3,11 +3,14 @@
 ## Reporting a Vulnerability
 Please do not open public issues for security vulnerabilities.
 
-If this project is hosted on GitHub, use Security Advisories to report issues:
+Use GitHub Security Advisories to report issues:
 `https://github.com/tiagosousa4/twitter-ai-detector/security/advisories`
 
 If you cannot use GitHub Security Advisories, open a private support request
 through the repository owner.
+
+Include the extension version, browser version, and reproduction steps.
+Do not include API keys or other sensitive data.
 
 ## Response Expectations
 - Acknowledge receipt within 72 hours.

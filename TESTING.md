@@ -44,11 +44,12 @@ Coverage:
 5. Enable local-only mode and confirm no network calls are made.
 6. Add an API key and verify remote analysis works for both providers.
 7. Confirm badges show scores and update when tweets are re-analyzed.
-8. Use Clear cache and verify tweets re-score after refresh.
+8. Use Clear cache and verify visible tweets re-score shortly after (no refresh required).
 9. Use Reveal hidden and confirm hidden/collapsed tweets reappear.
-10. Confirm stats update after analysis and reset with Reset stats.
+10. Enable local-only mode and confirm the heuristic suggestion line appears.
+11. Confirm stats update after analysis and reset with Reset stats.
 
 ## Regression Checks
 - Switching providers updates the model hint and token label.
-- Disabled detection leaves tweets untouched but keeps badges available.
+- Disabled detection reveals hidden/collapsed tweets and stops new analysis (existing badges remain).
 - Cache retention respects max size and TTL.

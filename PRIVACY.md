@@ -7,6 +7,7 @@ extension only, not to third-party providers.
 AI Tweet Detector analyzes tweet text to estimate AI likelihood. It can run
 entirely on-device (local-only mode) or send tweet text to a selected provider
 for scoring (Hugging Face or GPTZero).
+Tweet text is truncated to 5,000 characters before analysis.
 
 ## Data Collected
 The extension processes:
@@ -19,7 +20,7 @@ API keys, or other content on our servers.
 
 ## Data Sent Off-Device
 When local-only mode is disabled:
-- Tweet text is sent to the selected provider API for scoring.
+- Tweet text is sent to the selected provider API for scoring (truncated to 5,000 characters).
 - Provider services may log requests; refer to their privacy policies.
 We do not receive a copy of the tweet text or the provider responses.
 
@@ -29,7 +30,7 @@ When local-only mode is enabled:
 ## Local Storage
 Stored in `chrome.storage.local`:
 - API keys (never synced)
-- Local cache of tweet scores keyed by tweet IDs (timestamped)
+- Local cache of tweet scores keyed by tweet IDs (or a text hash when no status ID is available)
 - Usage statistics
 API keys stay on-device and are only used to authenticate requests to the
 selected provider.
@@ -50,6 +51,7 @@ The popup provides:
 - Clear cache (removes cached scores)
 - Reset stats (clears local stats)
 - Reset defaults (restores default settings)
+- Reveal hidden (shows any hidden or collapsed tweets)
 
 ## Data Sharing
 The extension does not sell or share data with third parties beyond the

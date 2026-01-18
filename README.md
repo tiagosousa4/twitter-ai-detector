@@ -20,6 +20,7 @@ The same checklist is available from the Info button in the popup.
 - Hide or collapse tweets above a configurable threshold
 - Configurable contexts (timeline, replies, search, tweet pages)
 - Local cache and usage statistics
+- Heuristic mode suggestion displayed when local-only mode is enabled
 
 ## Setup
 1. Open Chrome and go to `chrome://extensions`.
@@ -27,6 +28,8 @@ The same checklist is available from the Info button in the popup.
 3. Click **Load unpacked** and select the `ai-tweet-detector` folder.
 4. Open the extension popup, choose local-only or network analysis, and paste your API key if needed.
 5. Refresh Twitter/X to start analyzing.
+
+The extension runs on `https://twitter.com/*` and `https://x.com/*`.
 
 ## Providers
 ### Hugging Face (Default)
@@ -67,23 +70,36 @@ Manual testing steps are documented in `TESTING.md`.
 - Bypass on false positives: `SKIP_SECRET_SCAN=1 git commit ...` or `git commit --no-verify`
 - CI runs tests on pushes and pull requests.
 - Release workflow builds a zip artifact on tags/releases.
+- CWS upload: use the release zip (allowlist) and avoid uploading the full repo so internal datasets (e.g. `benchmarks/`) are excluded.
 
 ## File Structure
 ```
 ai-tweet-detector/
+|-- .github/
+|   `-- workflows/
 |-- manifest.json
 |-- background.js
 |-- content.js
 |-- filtering.js
 |-- heuristics.js
+|-- heuristics-suggestion.json
 |-- popup.html
 |-- popup-logic.js
 |-- popup.js
 |-- styles.css
 |-- package.json
+|-- benchmarks/
+|   `-- heuristics-benchmark-real.jsonl (gitignored)
+|-- scripts/
+|   |-- benchmark-utils.js
+|   |-- build-real-benchmark.js
+|   |-- run-benchmark.js
+|   `-- run-benchmark-suite.js
 |-- PRIVACY.md
 |-- SECURITY.md
 |-- TESTING.md
+|-- logo.png
+|-- dist/ (generated, gitignored)
 |-- githooks/
 |   `-- pre-commit
 |-- tests/
